@@ -15,6 +15,7 @@ Usage:
     aidoc sign <file> --cert CERT --key KEY [--sm2] [--tsa URL]
     aidoc sign <file> --gen-key
     aidoc verify <file>
+    aidoc view <file>
     aidoc --help
     aidoc --version
 
@@ -941,6 +942,71 @@ def cmd_verify(args):
         sys.exit(1)
 
 
+def cmd_view(args):
+    """view 命令 — 在浏览器中阅读 AIDOC 文档"""
+    if not args:
+        _die("用法: aidoc view <file.aidoc>")
+
+    path = args[0]
+    if not is_valid(path):
+        _die(f"不是有效的 .aidoc 文件: {path}")
+
+    import http.server
+    import socketserver
+    import threading
+    import webbrowser
+    import shutil
+
+    # 提取到临时目录
+    view_dir = tempfile.mkdtemp(prefix='aidoc_view_')
+    extract_all(path, view_dir)
+
+    # 写入文件清单
+    files = [info.filename for info in zipfile.ZipFile(path, 'r').infolist()]
+    with open(os.path.join(view_dir, 'aidoc-files.json'), 'w') as f:
+        json.dump(files, f)
+
+    # 复制阅读器
+    reader_src = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'reader.html')
+    if os.path.exists(reader_src):
+        shutil.copy(reader_src, os.path.join(view_dir, 'reader.html'))
+
+    # 切换到提取目录
+    orig_cwd = os.getcwd()
+    os.chdir(view_dir)
+
+    # 启动 HTTP 服务器
+    port = 9876
+    for _ in range(10):  # 尝试不同端口
+        try:
+            handler = http.server.SimpleHTTPRequestHandler
+            httpd = socketserver.TCPServer(("127.0.0.1", port), handler)
+            break
+        except OSError:
+            port += 1
+    else:
+        _die("无法启动 HTTP 服务器")
+
+    server_thread = threading.Thread(target=httpd.serve_forever, daemon=True)
+    server_thread.start()
+
+    url = f"http://127.0.0.1:{port}/reader.html"
+    _log(f"🌐 阅读器已启动: {url}")
+    _log(f"   按 Ctrl+C 关闭服务器")
+    webbrowser.open(url)
+
+    try:
+        while True:
+            import time
+            time.sleep(1)
+    except KeyboardInterrupt:
+        _log("\n👋 关闭阅读器")
+        httpd.shutdown()
+        os.chdir(orig_cwd)
+        import shutil
+        shutil.rmtree(view_dir, ignore_errors=True)
+
+
 def main():
     if len(sys.argv) < 2 or sys.argv[1] in ('-h', '--help'):
         print(__doc__.strip())
@@ -964,6 +1030,7 @@ def main():
         'extract': cmd_extract,
         'sign': cmd_sign,
         'verify': cmd_verify,
+        'view': cmd_view,
     }
 
     if cmd not in handlers:
