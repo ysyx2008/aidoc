@@ -241,6 +241,21 @@ aidoc check <file.aidoc>
 aidoc extract <file.aidoc> [output_dir]
 ```
 
+### 4.9 `aidoc view`
+
+在浏览器中阅读 AIDOC 文档，支持 Markdown/原文一键切换。
+
+```bash
+aidoc view <file.aidoc>
+```
+
+**特点**:
+- 🌐 **跨平台** — macOS / Windows / Linux 全支持，自动弹出浏览器
+- 📝 **Markdown 渲染** — 左侧展示格式化后的文档内容
+- 📄 **一键切换原文** — 右上角「查看原文」按钮，在浏览器中打开原始文件
+- 📋 **元数据面板** — 右侧显示文档信息和文件清单
+- 🚀 本地 HTTP 服务器自动启动，用完自动清理
+
 ---
 
 ## 5. 数字签名

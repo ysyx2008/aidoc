@@ -22,7 +22,7 @@ Both start at 0.1.0 in this initial release.
 - **AIDOC container format** — Standard ZIP with content.md as first entry for AI-optimized reads
 - **Two-level versioning** — Spec version (format stability) separated from Tool version (iteration speed)
 - **Standard governance** — Version lifecycle (pre-release → stable → evolution), change proposal process, deprecation policy, stability promises
-- **CLI tool** (`aidoc`) with 10 commands:
+- **CLI tool** (`aidoc`) with 11 commands:
   - `init` — Create blank AIDOC from template
   - `create` — Pack files (MD, Word, PDF, images) into AIDOC
   - `md` — Fast read of Markdown content (AI-optimized, ~10μs)
@@ -33,6 +33,7 @@ Both start at 0.1.0 in this initial release.
   - `extract` — Extract all files
   - `sign` — Digital signing (PKCS#7 / SM2)
   - `verify` — Signature verification + integrity check
+  - `view` — Web-based document reader with Markdown/original toggle
 - **Fast Read algorithm** — Skips ZIP Central Directory; 2.3–2.9× faster than standard ZIP
 - **Digital signing** — PKCS#7 detached signature (RSA, ECDSA) + SM2 (via gmssl)
 - **Self-signed test certificate generation** (`--gen-key`)
@@ -40,6 +41,7 @@ Both start at 0.1.0 in this initial release.
 - **Full specification** (SPEC.md) — Container structure, compression strategy, extension mechanism, governance
 - **Bilingual documentation** — Chinese and English user guides
 - **Performance benchmark** — Reproducible benchmark script with detailed results
+- **Cross-platform web reader** (`aidoc view`) — Browser-based with Markdown/original toggle
 - **CI Pipeline** — GitHub Actions (Python 3.9–3.12, full test suite)
 - **Contributing guide** — Development workflow, code style, submission process
 - **MIT License**

@@ -239,6 +239,21 @@ Extract all files from the container.
 aidoc extract <file.aidoc> [output_dir]
 ```
 
+### 4.9 `aidoc view`
+
+Read AIDOC documents in a web-based reader with Markdown/original toggle.
+
+```bash
+aidoc view <file.aidoc>
+```
+
+**Features**:
+- 🌐 **Cross-platform** — macOS / Windows / Linux, opens automatically in browser
+- 📝 **Markdown rendering** — Formatted display of document content
+- 📄 **Toggle to original** — Switch to view the original document in browser
+- 📋 **Metadata panel** — Document info and file list on the right side
+- 🚀 Local HTTP server starts automatically, cleans up on exit
+
 ---
 
 ## 5. Digital Signing
