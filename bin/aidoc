@@ -1,0 +1,8 @@
+#!/bin/bash
+# aidoc — CLI entry point
+# 使用 micromamba py310 环境（含 cryptography 支持）
+if command -v micromamba &>/dev/null; then
+    exec micromamba run -n py310 python3 "$(dirname "$0")/../src/aidoc.py" "$@"
+else
+    exec python3 "$(dirname "$0")/../src/aidoc.py" "$@"
+fi

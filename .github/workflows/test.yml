@@ -1,0 +1,138 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.9", "3.10", "3.11", "3.12"]
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install cryptography
+
+    - name: Test CLI help and version
+      run: |
+        python src/aidoc.py --help
+        python src/aidoc.py --version
+
+    - name: Test init and create
+      run: |
+        echo "# Test" > /tmp/test.md
+        python src/aidoc.py init -o /tmp/blank.aidoc --title "CI Test"
+        python src/aidoc.py create /tmp/test.md -o /tmp/doc.aidoc --author "CI" --tags "test,ci"
+        python src/aidoc.py check /tmp/doc.aidoc
+
+    - name: Test fast read and metadata
+      run: |
+        python src/aidoc.py md /tmp/doc.aidoc
+        python src/aidoc.py meta /tmp/doc.aidoc
+        python src/aidoc.py ls /tmp/doc.aidoc
+        python src/aidoc.py info /tmp/doc.aidoc
+
+    - name: Test extract
+      run: |
+        python src/aidoc.py extract /tmp/doc.aidoc /tmp/extract
+        ls -la /tmp/extract/
+
+    - name: Test signing and verification
+      run: |
+        python src/aidoc.py sign /tmp/doc.aidoc --gen-key
+        python src/aidoc.py verify /tmp/doc.aidoc
+
+    - name: Test tamper detection
+      run: |
+        # Create a tampered file with wrong signature
+        echo "tampered" > /tmp/tamper.md
+        python src/aidoc.py create /tmp/tamper.md -o /tmp/tamper.aidoc
+
+        # Copy original signatures (this will fail verification)
+        python3 -c "
+import zipfile, shutil
+sig = {}
+with zipfile.ZipFile('/tmp/doc.aidoc') as zf:
+    for n in ['manifest.json', 'signature.p7s']:
+        sig[n] = zf.read(n)
+entries = {}
+with zipfile.ZipFile('/tmp/tamper.aidoc') as zf:
+    for i in zf.infolist():
+        entries[i.filename] = zf.read(i.filename)
+with zipfile.ZipFile('/tmp/out.aidoc', 'w', zipfile.ZIP_DEFLATED) as zf:
+    zf.comment = b'AIDOCv1'
+    info = zipfile.ZipInfo('content.md')
+    info.compress_type = zipfile.ZIP_STORED; info.flag_bits = 0
+    zf.writestr(info, entries['content.md'])
+    zf.writestr('metadata.json', entries['metadata.json'], zipfile.ZIP_DEFLATED)
+    zf.writestr('manifest.json', sig['manifest.json'], zipfile.ZIP_DEFLATED)
+    zf.writestr('signature.p7s', sig['signature.p7s'], zipfile.ZIP_STORED)
+shutil.move('/tmp/out.aidoc', '/tmp/tamper.aidoc')
+"
+        # This should fail (exit code != 0)
+        if python src/aidoc.py verify /tmp/tamper.aidoc; then
+          echo "FAIL: tampered file passed verification"
+          exit 1
+        else
+          echo "PASS: tamper detected"
+        fi
+
+    - name: Test create with attachment
+      run: |
+        touch /tmp/attachment.pdf
+        python src/aidoc.py create /tmp/test.md /tmp/attachment.pdf -o /tmp/attach.aidoc
+        python src/aidoc.py ls /tmp/attach.aidoc
+
+  bench:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.11"
+    - name: Run benchmark (quick mode)
+      run: |
+        # Run a quick subset (fewer iterations)
+        python3 -c "
+import sys, os
+sys.path.insert(0, 'src')
+import aidoc, hashlib, time, zipfile, json
+
+# Quick benchmark
+data = b'# Test\n\n' + b'x' * 1000
+with open('/tmp/bench.md', 'wb') as f: f.write(data)
+
+import subprocess
+subprocess.run([sys.executable, 'src/aidoc.py', 'create', '/tmp/bench.md', '-o', '/tmp/bench.aidoc'],
+               capture_output=True)
+
+# Fast path
+t0 = time.time()
+for _ in range(1000): aidoc.read_md_fast('/tmp/bench.aidoc')
+fast = (time.time() - t0) / 1000 * 1e6
+
+# Standard
+t0 = time.time()
+for _ in range(1000):
+    with zipfile.ZipFile('/tmp/bench.aidoc') as zf:
+        zf.read('content.md')
+std = (time.time() - t0) / 1000 * 1e6
+
+print(f'Fast: {fast:.1f}μs, ZIP: {std:.1f}μs, Ratio: {std/fast:.1f}x')
+assert fast < std, 'Fast path should be faster'
+print('Benchmark OK')
+"
