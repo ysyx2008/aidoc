@@ -112,7 +112,7 @@ The metadata file is a UTF-8 encoded JSON object. It MUST exist in every valid A
   "created_at": "2026-04-29T08:30:00",  // ISO 8601 creation timestamp
 
   // OPTIONAL fields
-  "author": "于申",                // Author name(s)
+  "author": "旗鱼",                // Author name(s)
   "tags": ["AI", "架构", "国元证券"],  // Tags for categorization
   "description": "文档摘要",        // Brief description
   "source_url": "https://...",     // Original source URL
@@ -145,7 +145,7 @@ The Markdown content file is the AI's primary entry point. It MUST contain the f
 ```markdown
 # 人工智能六层架构分析报告
 
-> 作者：于申 | 日期：2026-04-28
+> 作者：旗鱼 | 日期：2026-04-28
 
 ## 一、基础设施层
 

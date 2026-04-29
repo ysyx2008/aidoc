@@ -4,7 +4,7 @@
 
 ```bash
 # 只有一个 MD 文件时
-aidoc create example.md -o example.aidoc --author '于申'
+aidoc create example.md -o example.aidoc --author '旗鱼'
 
 # 查看内容
 aidoc md example.aidoc
@@ -30,5 +30,5 @@ aidoc init -o mydoc.aidoc --title '我的文档'
 本目录下的 `example.aidoc` 是使用以下命令创建的：
 
 ```bash
-aidoc create example.md -o example.aidoc --author '于申' --tags '示例,演示'
+aidoc create example.md -o example.aidoc --author '旗鱼' --tags '示例,演示'
 ```

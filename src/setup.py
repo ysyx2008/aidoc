@@ -6,7 +6,7 @@ setup(
     description="AIDOC — AI-Native Document Format Toolkit",
     long_description=open("../README.md", encoding="utf-8").read(),
     long_description_content_type="text/markdown",
-    author="于申",
+    author="旗鱼",
     python_requires=">=3.8",
     py_modules=["aidoc"],
     package_dir={"": "."},

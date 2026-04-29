@@ -21,7 +21,7 @@ Usage:
 
 Examples:
     aidoc init -o mydoc.aidoc --title 'My Notes'
-    aidoc create report.md -o report.aidoc --author '于申' --tags 'AI,架构'
+    aidoc create report.md -o report.aidoc --author '旗鱼' --tags 'AI,架构'
     aidoc create doc.docx summary.md -o doc.aidoc
     aidoc md report.aidoc
     aidoc ls report.aidoc

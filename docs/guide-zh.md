@@ -94,7 +94,7 @@ cat > mydoc.md << 'EOF'
 EOF
 
 # 打包为 .aidoc
-aidoc create mydoc.md -o mydoc.aidoc --author "于申" --tags "AI,文档"
+aidoc create mydoc.md -o mydoc.aidoc --author "旗鱼" --tags "AI,文档"
 ```
 
 ### 3.2 AI 读取内容
@@ -391,7 +391,7 @@ aidoc verify file.aidoc
 ```bash
 # 批量打包
 for f in *.md; do
-    aidoc create "$f" -o "${f%.md}.aidoc" --author "于申"
+    aidoc create "$f" -o "${f%.md}.aidoc" --author "旗鱼"
 done
 ```
 

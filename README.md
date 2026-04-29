@@ -85,7 +85,7 @@ cd src && pip install .
 aidoc init -o 笔记.aidoc --title '我的笔记'
 
 # Markdown → AIDOC
-aidoc create 报告.md -o 报告.aidoc --author '于申' --tags 'AI,架构'
+aidoc create 报告.md -o 报告.aidoc --author '旗鱼' --tags 'AI,架构'
 
 # Word + Markdown → AIDOC
 aidoc create 文档.docx 摘要.md 封面.png -o 文档.aidoc
@@ -207,7 +207,7 @@ aidoc/
 
 ## 许可证
 
-[MIT](LICENSE) © 2026 于申
+[MIT](LICENSE) © 2026 旗鱼
 
 ---
 
