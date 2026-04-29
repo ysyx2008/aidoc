@@ -1,35 +1,32 @@
 # AIDOC 示例
 
-## 文件说明
+## 示例文件
 
-| 文件 | 说明 |
-|:----|:------|
-| `demo.aidoc` | 打包后的 AIDOC 容器（Word + PDF + 图片 + MD 摘要） |
-| `demo.md` | AIDOC 内部的 content.md（AI 摘要） |
-| `项目需求说明书.docx` | Word 原始文档 |
-| `项目需求说明书-英文版.pdf` | PDF 原始文档 |
-| `技术栈架构图.png` | 图片附件 |
-| `项目里程碑.png` | 图片附件 |
-| `generate_samples.py` | 生成上述示例文件的脚本 |
+| 文件 | 类型 | 说明 |
+|:----|:----|:------|
+| `demo-word.aidoc` | Word | content.md + document.docx，中文内容 |
+| `demo-pdf.aidoc` | PDF | content.md + document.pdf，英文内容 |
+| `demo-image.aidoc` | 图片 | content.md + 技术栈架构图.png |
+| `generate_samples.py` | 脚本 | 一键重新生成所有示例 |
 
 ## 使用方式
 
 ```bash
-# 查看 AIDOC 内容
-aidoc view examples/demo.aidoc
+# 查看 AIDOC 内容（浏览器阅读器）
+aidoc view examples/demo-word.aidoc
 
-# 极速读取 AI 摘要
-aidoc md examples/demo.aidoc
+# 极速读取 Markdown
+aidoc md examples/demo-word.aidoc
 
-# 查看元数据和文件清单
-aidoc info examples/demo.aidoc
+# 查看文件清单
+aidoc ls examples/demo-word.aidoc
 
-# 提取所有原始文件
-aidoc extract examples/demo.aidoc ./导出
+# 提取原始文件
+aidoc extract examples/demo-word.aidoc ./导出
 
-# 签名 + 验签
-aidoc sign examples/demo.aidoc --gen-key
-aidoc verify examples/demo.aidoc
+# 签名验证
+aidoc sign examples/demo-word.aidoc --gen-key
+aidoc verify examples/demo-word.aidoc
 ```
 
 ## 重新生成
@@ -37,7 +34,6 @@ aidoc verify examples/demo.aidoc
 ```bash
 cd examples
 python3 generate_samples.py
-aidoc create 项目需求说明书.docx 项目需求说明书-英文版.pdf 技术栈架构图.png 项目里程碑.png demo.md -o demo.aidoc
 ```
 
 ---

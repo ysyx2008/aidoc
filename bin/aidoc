@@ -1,8 +1,10 @@
 #!/bin/bash
 # aidoc — CLI entry point
 # 使用 micromamba py310 环境（含 cryptography 支持）
+# 解析 symlink 获取真实路径
+SCRIPT_DIR="$(cd "$(dirname "$(readlink "$0" 2>/dev/null || echo "$0")")" && pwd)"
 if command -v micromamba &>/dev/null; then
-    exec micromamba run -n py310 python3 "$(dirname "$0")/../src/aidoc.py" "$@"
+    exec micromamba run -n py310 python3 "$SCRIPT_DIR/../src/aidoc.py" "$@"
 else
-    exec python3 "$(dirname "$0")/../src/aidoc.py" "$@"
+    exec python3 "$SCRIPT_DIR/../src/aidoc.py" "$@"
 fi
