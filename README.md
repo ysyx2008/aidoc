@@ -13,7 +13,8 @@
   <a href="docs/guide-en.md">📖 English Guide</a> ·
   <a href="docs/performance-zh.md">📊 性能报告</a> ·
   <a href="docs/performance-en.md">📊 Benchmark</a> ·
-  <a href="spec/SPEC.md">📐 规范文档</a> ·
+  <a href="spec/SPEC.md">📐 规范 (EN)</a> ·
+  <a href="spec/SPEC-zh.md">📐 规范 (中文)</a> ·
   <a href="examples/">📁 示例</a>
 </p>
 

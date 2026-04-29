@@ -1,5 +1,7 @@
 # AIDOC — AI-Native Document Format Specification
 
+> **English** | [中文](SPEC-zh.md)
+
 **Version**: 0.1.0 (Draft)  
 **Status**: Proposed Standard  
 **Last Updated**: 2026-04-29
