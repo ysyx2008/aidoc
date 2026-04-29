@@ -12,7 +12,7 @@ Usage:
     aidoc info <file>
     aidoc check <file>
     aidoc extract <file> [output_dir]
-    aidoc sign <file> --cert CERT --key KEY [--sm2]
+    aidoc sign <file> --cert CERT --key KEY [--sm2] [--tsa URL]
     aidoc sign <file> --gen-key
     aidoc verify <file>
     aidoc --help
@@ -26,6 +26,7 @@ Examples:
     aidoc ls report.aidoc
     aidoc extract report.aidoc ./output
     aidoc sign report.aidoc --gen-key
+    aidoc sign report.aidoc --cert cert.pem --key key.pem --tsa http://tsa.cn/timestamp
     aidoc verify report.aidoc
 """
 
@@ -284,7 +285,7 @@ except ImportError:
     _CRYPTO_AVAILABLE = False
 
 
-SIGNATURE_FILES = {'manifest.json', 'signature.p7s'}
+SIGNATURE_FILES = {'manifest.json', 'signature.p7s', 'timestamp.tsr'}
 
 
 def _compute_sha256(data):
@@ -337,7 +338,7 @@ def _get_openssl():
     return openssl
 
 
-def sign_aidoc(path, cert_path=None, key_path=None, sm2=False, gen_key=False):
+def sign_aidoc(path, cert_path=None, key_path=None, sm2=False, gen_key=False, tsa_url=None):
     """
     对 AIDOC 文件进行数字签名。
 
@@ -413,6 +414,56 @@ def sign_aidoc(path, cert_path=None, key_path=None, sm2=False, gen_key=False):
 
         with open(sig_path, 'rb') as f:
             signature = f.read()
+
+        # 时间戳服务（可选）
+        timestamp_tsr = None
+        if tsa_url:
+            _log(f"🕒 请求时间戳: {tsa_url}")
+            tsq_fd, tsq_path = tempfile.mkstemp(suffix='.tsq')
+            os.close(tsq_fd)
+            tsr_fd, tsr_path = tempfile.mkstemp(suffix='.tsr')
+            os.close(tsr_fd)
+
+            try:
+                # 生成时间戳查询
+                tsq_cmd = [openssl, 'ts', '-query',
+                           '-data', sig_path,
+                           '-out', tsq_path,
+                           '-sha256']
+                r = subprocess.run(tsq_cmd, capture_output=True, text=True)
+                if r.returncode != 0:
+                    _die(f"时间戳查询生成失败: {r.stderr.strip()}")
+
+                # 发送到 TSA 服务器
+                import urllib.request
+                with open(tsq_path, 'rb') as f:
+                    req_data = f.read()
+                req = urllib.request.Request(tsa_url, data=req_data,
+                    headers={'Content-Type': 'application/timestamp-query'})
+                with urllib.request.urlopen(req, timeout=30) as resp:
+                    tsr_data = resp.read()
+                with open(tsr_path, 'wb') as f:
+                    f.write(tsr_data)
+
+                # 验证时间戳响应
+                ts_verify = [openssl, 'ts', '-verify',
+                             '-data', sig_path,
+                             '-in', tsr_path,
+                             '-CAfile', '/dev/null',  # 仅在有时
+                             '-untrusted']
+                r = subprocess.run(ts_verify, capture_output=True, text=True)
+                if r.returncode == 0:
+                    _log(f"  ✅ 时间戳验证通过")
+
+                with open(tsr_path, 'rb') as f:
+                    timestamp_tsr = f.read()
+                _log(f"  📎 timestamp.tsr       ({len(timestamp_tsr):>8,} B)")
+            except Exception as e:
+                _log(f"  ⚠️  时间戳请求失败: {e}")
+            finally:
+                for p in [tsq_path, tsr_path]:
+                    if os.path.exists(p):
+                        os.unlink(p)
     finally:
         os.unlink(manifest_path)
         os.unlink(sig_path)
@@ -456,6 +507,11 @@ def sign_aidoc(path, cert_path=None, key_path=None, sm2=False, gen_key=False):
         # 写入 signature.p7s
         zf.writestr('signature.p7s', signature, zipfile.ZIP_STORED)
         _log(f"🔏 signature.p7s        ({len(signature):>8,} B)  [STORED]")
+
+        # 写入时间戳 token（可选）
+        if timestamp_tsr:
+            zf.writestr('timestamp.tsr', timestamp_tsr, zipfile.ZIP_STORED)
+            _log(f"🕒 timestamp.tsr        ({len(timestamp_tsr):>8,} B)  [STORED]")
 
     # 替换原文件
     os.replace(tmp_path, path)
@@ -569,6 +625,25 @@ def verify_aidoc(path):
         print(f"    有效期: {valid_from or ''} — {valid_to or ''}")
         print(f"    算法:   {manifest.get('algorithm', 'N/A')}")
         print(f"    签署于: {manifest.get('signed_at', 'N/A')}")
+
+        # 检查是否有时间戳
+        with zipfile.ZipFile(path, 'r') as zf:
+            if 'timestamp.tsr' in [n.filename for n in zf.infolist()]:
+                tsr_data = zf.read('timestamp.tsr')
+                import tempfile as tf
+                tsr_fd2, tsr_path2 = tf.mkstemp(suffix='.tsr')
+                os.write(tsr_fd2, tsr_data); os.close(tsr_fd2)
+                try:
+                    r2 = subprocess.run(
+                        [openssl, 'ts', '-reply', '-in', tsr_path2, '-text'],
+                        capture_output=True, text=True)
+                    if r2.returncode == 0:
+                        ts_time = _extract_cert_field(r2.stdout, 'Time stamp:')
+                        if ts_time:
+                            print(f"    时间戳: {ts_time}")
+                finally:
+                    os.unlink(tsr_path2)
+
         return True
     else:
         print(f"  {'❌ 签名无效!' if not signature_valid else '✅ 签名有效'}")
@@ -821,6 +896,7 @@ def cmd_sign(args):
     key_path = None
     sm2 = False
     gen_key = False
+    tsa_url = None
 
     i = 0
     file_args = []
@@ -838,6 +914,9 @@ def cmd_sign(args):
             elif args[i] == '--gen-key':
                 gen_key = True
                 i += 1
+            elif args[i] == '--tsa' and i + 1 < len(args):
+                tsa_url = args[i + 1]
+                i += 2
             else:
                 i += 1
         else:
@@ -850,7 +929,7 @@ def cmd_sign(args):
     if not path:
         _die("需要指定 .aidoc 文件路径")
 
-    sign_aidoc(path, cert_path=cert_path, key_path=key_path, sm2=sm2, gen_key=gen_key)
+    sign_aidoc(path, cert_path=cert_path, key_path=key_path, sm2=sm2, gen_key=gen_key, tsa_url=tsa_url)
 
 
 def cmd_verify(args):
